@@ -4,7 +4,7 @@
 "field.choose": "Vui lòng chọn một trường trước",
 "value.choose": "Vui lòng chỉ định giá trị tối đa/tối thiểu",
 "set.err": "Không thể điền vào ô",
-"success.num": "Đã điền thành công {{num}} ô",
+"success.num": "Đã điền thành công {{num}} / {{total}}ô",
 "set.some.err": "Không thể điền vào một số ô",
 "table.info": "Điền các bản ghi trống trong trường bằng các số ngẫu nhiên",
 "label.field": "Trường",

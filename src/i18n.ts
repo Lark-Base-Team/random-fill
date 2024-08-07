@@ -5,9 +5,6 @@ import translationEN from './locales/en.json';
 import translationZH from './locales/zh.json';
 import translationVI from './locales/vi.json';
 
-// 设置支持的语言列表
-const supportedLanguages = ['en', 'zh', 'vi'];
-
 
 export function initI18n(lang: 'en' | 'zh') {
   // 初始化 i18n

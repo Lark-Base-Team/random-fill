@@ -1,8 +1,10 @@
-import { IFieldMeta as FieldMeta, IWidgetField, IWidgetTable, TableMeta, bitable, FieldType, IOpenSegmentType } from "@lark-base-open/js-sdk";
+import { IFieldMeta as FieldMeta, IField, ITable, ITableMeta, bitable, FieldType, IOpenSegmentType, FilterOperator, FilterConjunction } from "@lark-base-open/js-sdk";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { Form, Toast, Spin, Col, Row, Button, Tooltip } from "@douyinfe/semi-ui";
 import { useTranslation } from 'react-i18next';
 import { IconHelpCircle } from '@douyinfe/semi-icons';
+
+window._bitable = bitable
 
 
 
@@ -11,7 +13,7 @@ const f = [FieldType.Number, FieldType.Rating, FieldType.Currency, FieldType.Tex
 /** 表格，字段变化的时候刷新插件 */
 export default function Ap() {
   const [key, setKey] = useState<string | number>(0);
-  const [tableList, setTableList] = useState<IWidgetTable[]>([])
+  const [tableList, setTableList] = useState<ITable[]>([])
   // 绑定过的tableId
   const bindList = useRef<Set<string>>(new Set())
 
@@ -67,21 +69,21 @@ function Randomize() {
   const [loadingContent, setLoadingContent] = useState('')
   const [tableInfo, setTableInfo] = useState<{
     /** 当前所选的table,默认为打开插件时的table */
-    table: IWidgetTable,
+    table: ITable,
     /** 当前所选table的元信息 */
-    tableMeta: TableMeta
+    tableMeta: ITableMeta
     /** 所有的table元信息 */
-    tableMetaList: TableMeta[],
+    tableMetaList: ITableMeta[],
     /** 所有table的实例 */
-    tableList: IWidgetTable[]
+    tableList: ITable[]
   }>();
   const [fieldInfo, setFieldInfo] = useState<{
     /**当前所选field的实例 */
-    field: IWidgetField | undefined
+    field: IField | undefined
     /** 当前所选field的元信息 */
     fieldMeta: FieldMeta | undefined
     /** tableInfo.table的所有field实例 */
-    fieldList: IWidgetField[],
+    fieldList: IField[],
     /** tableInfo.table的所有field元信息 */
     fieldMetaList: FieldMeta[]
   }>()
@@ -211,7 +213,7 @@ function Randomize() {
       }
       try {
         const newValue = JSON.parse(String(restFormValue.chartsRange))
-        restFormValue.chartsRange = typeof newValue === 'number' ? String(newValue) : newValue
+        restFormValue.chartsRange = typeof newValue === 'number' ? String(newValue) : newValue;
       } catch (error) {
         console.error(error)
       }
@@ -249,40 +251,44 @@ function Randomize() {
         break;
     }
 
-    /** 空的单元格行id */
-    const recordIdList = new Set((await tableInfo?.table.getRecordIdList()));
-    const fieldValueList = (await fieldInfo.field.getFieldValueList()).map(({ record_id }) => record_id);
     const fieldId = fieldInfo.field.id;
-    fieldValueList.forEach((id) => {
-      recordIdList.delete(id!)
-    })
+    let total: number | undefined = undefined;
+    let hasMore: boolean = true;
 
 
-
-
-
-    const toSetTask = [...recordIdList].map((recordId) => ({
-      recordId,
-      fields: {
-        [fieldId]: getCellValue(),
-      }
-    }))
     let successCount = 0;
-    const step = 5000;
-    for (let index = 0; index < toSetTask.length; index += step) {
-      const element = toSetTask.slice(index, index + step);
-      const sleep = element.length
-      await tableInfo?.table.setRecords(element).then(() => {
-        successCount += element.length;
-        setLoadingContent(t('success.num', { num: successCount }))
-      }).catch((e) => {
-        console.error(e)
+    while (hasMore) {
+      const emptyRecordIdListByPage = await tableInfo?.table.getRecordIdListByPage({
+        filter: {
+          conditions: [
+            {
+              fieldId,
+              operator: FilterOperator.IsEmpty,
+            }
+          ],
+          conjunction: FilterConjunction.And,
+        }
       });
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve('')
-        }, sleep);
-      })
+      if (emptyRecordIdListByPage) {
+        const { recordIds: currentPageRecordIds, total: currentPageRemainTotal, hasMore: currentPageHasMore } = emptyRecordIdListByPage;
+        hasMore = currentPageHasMore;
+        if (total === undefined) {
+          total = currentPageRemainTotal;
+        }
+        const toSetTask = currentPageRecordIds.map((recordId) => ({
+          recordId,
+          fields: {
+            [fieldId]: getCellValue(),
+          }
+        }));
+        const element = toSetTask;
+        await tableInfo?.table.setRecords(element).then(() => {
+          successCount += element.length;
+          setLoadingContent(t('success.num', { num: successCount, total }) + `\n当前剩余${currentPageRemainTotal}`)
+        }).catch((e) => {
+          console.error(e)
+        });
+      }
     }
 
     setLoading(false)
