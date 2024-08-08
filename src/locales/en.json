@@ -4,7 +4,7 @@
 "field.choose": "Please choose a field first",
 "value.choose": "Please specify the maximum/minimum value",
 "set.err": "Failed to fill cell",
-"success.num": "Successfully filled {{num}} / {{total}} cells",
+"success.num": "Successfully filled {{num}} / {{total}} cells。remaining {{remain}}",
 "set.some.err": "Failed to fill some cells",
 "table.info": "Fill empty records in the field with random numbers",
 "label.field": "Field",

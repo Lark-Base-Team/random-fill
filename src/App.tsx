@@ -4,6 +4,7 @@ import { Form, Toast, Spin, Col, Row, Button, Tooltip } from "@douyinfe/semi-ui"
 import { useTranslation } from 'react-i18next';
 import { IconHelpCircle } from '@douyinfe/semi-icons';
 
+// @ts-ignore
 window._bitable = bitable
 
 
@@ -284,7 +285,7 @@ function Randomize() {
         const element = toSetTask;
         await tableInfo?.table.setRecords(element).then(() => {
           successCount += element.length;
-          setLoadingContent(t('success.num', { num: successCount, total }) + `\n当前剩余${currentPageRemainTotal}`)
+          setLoadingContent(t('success.num', { num: successCount, total, remain: currentPageRemainTotal - element.length }));
         }).catch((e) => {
           console.error(e)
         });
@@ -292,7 +293,7 @@ function Randomize() {
     }
 
     setLoading(false)
-    setLoadingContent('')
+    setLoadingContent('');
   }
 
   return <div>
