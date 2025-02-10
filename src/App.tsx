@@ -1,4 +1,4 @@
-import { IFieldMeta as FieldMeta, IField, ITable, ITableMeta, bitable, FieldType, IOpenSegmentType, FilterOperator, FilterConjunction } from "@lark-base-open/js-sdk";
+import { IFieldMeta as FieldMeta, IField, ITable, ITableMeta, bitable, FieldType, IOpenSegmentType, FilterOperator, FilterConjunction, IOpenCellValue, IOpenSegment } from "@lark-base-open/js-sdk";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { Form, Toast, Spin, Col, Row, Button, Tooltip } from "@douyinfe/semi-ui";
 import { useTranslation } from 'react-i18next';
@@ -62,6 +62,8 @@ export default function Ap() {
 
 /** 随机字符串支持的字段 */
 const randomChartsSupportField = [FieldType.Text]
+
+const constantTypeSupportField = [FieldType.Text, FieldType.Number]
 
 function Randomize() {
   const { t } = useTranslation();
@@ -182,7 +184,8 @@ function Randomize() {
     fieldInfo?.fieldList[0]?.tableId === tableInfo?.table.id &&
     fieldInfo?.fieldMetaList.filter(({ type: _type }) => {
       if (type === 'number') return f.includes(_type);
-      if (type === 'charts') return randomChartsSupportField.includes(_type)
+      if (type === 'charts') return randomChartsSupportField.includes(_type);
+      if (type === 'constant') return constantTypeSupportField.includes(_type)
     })) || [];
 
   const fill = async () => {
@@ -190,7 +193,7 @@ function Randomize() {
       Toast.error(t('field.choose'));
       return;
     }
-    const { max, min, useInt, type, ...restFormValue } = formApi.current.getValues();
+    const { max, min, useInt, type, constantValue, ...restFormValue } = formApi.current.getValues();
 
 
     // 定长度
@@ -228,6 +231,8 @@ function Randomize() {
       }
     }
 
+
+
     let getRandom: any = getRandomFloat
     if (useInt) {
       getRandom = getRandomInt
@@ -243,10 +248,18 @@ function Randomize() {
       case FieldType.Number:
       case FieldType.Rating:
       case FieldType.Currency:
-        getCellValue = () => getRandom({ max, min, ...restFormValue })
+        if (type === 'constant') {
+          getCellValue = () => Number(constantValue);
+        } else {
+          getCellValue = () => getRandom({ max, min, ...restFormValue });
+        }
         break;
       case FieldType.Text:
-        getCellValue = () => ([{ type: IOpenSegmentType.Text, text: String(getRandom({ max, min, ...restFormValue })) }])
+        if (type === 'constant') {
+          getCellValue = () => ([{ type: IOpenSegmentType.Text, text: String(constantValue) }])
+        } else {
+          getCellValue = () => ([{ type: IOpenSegmentType.Text, text: String(getRandom({ max, min, ...restFormValue })) }])
+        }
         break;
       default:
         break;
@@ -316,6 +329,7 @@ function Randomize() {
           }}>
           <Form.Select.Option value={'number'}>{t("number.mode")}</Form.Select.Option>
           <Form.Select.Option value={'charts'}>{t("password.mode")}</Form.Select.Option>
+          <Form.Select.Option value={'constant'}>{t("constant.mode")}</Form.Select.Option>
         </Form.Select>
 
         <Form.Select style={{ width: '100%' }} onChange={onSelectTable} label='Table' field="table">
@@ -328,6 +342,10 @@ function Randomize() {
             fieldMetas.map(({ id, name }) => <Form.Select.Option key={id} value={id}>{name}</Form.Select.Option>)
           }
         </Form.Select>
+        {
+          type === 'constant' && <Form.TextArea style={{ width: '100%' }} label={t('label.constant')} field="constantValue">
+          </Form.TextArea>
+        }
 
         {type === 'number' && <>
           <Form.Input style={{ width: '100%' }} type="Number" label={t('label.max')} field="max">
